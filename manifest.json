@@ -1,0 +1,39 @@
+{
+
+  "manifest_version": 2,
+  "name": "GmVET Data Catcher",
+  "version": "2.0",
+
+  "description": "A personalized addon to retrieve all informations about a customer on GmVET.",
+
+  "icons": {
+    "48": "icons/gmvet-data-catcher-48.png",
+    "96": "icons/gmvet-data-catcher-96.png"
+  },
+
+  "permissions": [
+    "activeTab"
+  ],
+
+  "browser_action": {
+    "default_icon": "icons/gmvet-data-catcher-32.png",
+    "default_title": "GmVET Data Catcher",
+    "default_popup": "popup/gmvet-data-catcher.html"
+  },
+
+  "browser_specific_settings": {
+    "gecko": {
+      "id": "{4165f5b3-7b33-4053-be2b-660616b2f058}",
+      "strict_min_version": "42.0"
+    }
+  },
+
+  "content_scripts": [
+    {
+      "matches": ["*://vet1.gmvet.net/*"],
+      "run_at": "document_end",
+      "js": ["gmvet-data-catcher.js"]
+    }
+  ]
+
+}

@@ -2,9 +2,10 @@
 
   "manifest_version": 2,
   "name": "GmVET Data Catcher",
-  "version": "2.0",
+  "version": "3.1",
+  "author": "Dorian PILORGE",
 
-  "description": "A personalized addon to retrieve all informations about a customer on GmVET.",
+  "description": "Une simple WebExtension permettant de récupérer les informations d'un client et son animal sur la plateforme GmVET.",
 
   "icons": {
     "48": "icons/gmvet-data-catcher-48.png",

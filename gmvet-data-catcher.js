@@ -22,9 +22,9 @@ var petIdentif;         // Transpondeur
 var petTatoo            // Tatouage
 var petAge;             // Age
 
-// Eléments divers de la page
-var loader;
-var container = document.querySelector('[data-test="detail-info-1"]');
+// Eléments généraux de la page
+var container;
+var message;
 var button;
 var script;
 var invoice;
@@ -56,18 +56,48 @@ function getInfos() {
     petAge = document.getElementsByName('patient.age')[0].value;
 }
 
-// Attend que les informations soient disponibles
+// Attend que le conteneur dans lequel on insère le bouton d'export soit disponible
+function waitContainer() {
+    return new Promise(function (resolve, reject) {(
+        function waitingForContainer() {
+            if (
+                document.querySelector('div[data-test="detail-info-1"]')
+            ) {
+                container = document.querySelector('div[data-test="detail-info-1"]');
+                return resolve();
+            }
+            setTimeout(waitingForContainer, 100);
+        }) ();
+    });
+}
+
+// Attend que les toutes les informations à récupérer soient disponibles
 function waitInfos() {
     return new Promise(function (resolve, reject) {(
-        function waitForInfos() {
+        function waitingForInfos() {
             if (
-                document.getElementById('extendedClientPanel').style.display != 'none' &&   // Uniquement si les onglets sont visibles
                 document.getElementsByName('species.id')[0].value &&
                 document.getElementsByName('gender.id')[0].value
             ) {
+                container = document.querySelector('div[data-test="detail-info-1"]');
                 return resolve();
             }
-            setTimeout(waitForInfos, 100);
+            setTimeout(waitingForInfos, 100);
+        }) ();
+    });
+}
+
+// Attend que le conteneur de l'agenda soit disponible (pour quand rafraichir la page)
+function waitAgenda() {
+    return new Promise(function (resolve, reject) {(
+        function waitingForAgenda() {
+            if (
+                document.querySelector('span#agendaScreen') &&
+                document.querySelector('span#agendaScreen').classList.contains('ui-tabs-hide') == false
+            ) {
+                return resolve();
+            }
+            setTimeout(waitingForAgenda, 100);
         }) ();
     });
 }
@@ -149,36 +179,37 @@ function getPetIdentif() {
 
 // Affiche le texte de chargement
 function addLoader() {
-    loader = document.createElement('span');
-    loader.setAttribute('id', 'loader');
-    loader.setAttribute('name', 'loader');
-    loader.setAttribute('style', 'display: block; margin: 8px; margin-left: 105px; color: #505050; font-weight: bold;');
-    loader.innerHTML = "Chargement...";
-    container.appendChild(loader);
+    message = document.createElement('span');
+    message.setAttribute('id', 'loader');
+    message.setAttribute('name', 'loader');
+    message.setAttribute('style', 'display: block; margin: 8px; margin-left: 105px; color: #505050; font-weight: bold;');
+    message.innerHTML = "Chargement...";
+    container.appendChild(message);
 }
 
-// Affiche le message de raffraichissement
+// Affiche le message d'avertissement (si les données de l'animal ne peuvent pas être récupérées)
 function addWarning() {
-    loader = document.createElement('span');
-    loader.setAttribute('id', 'warning');
-    loader.setAttribute('name', 'warning');
-    loader.setAttribute('style', 'display: block; margin: 8px; margin-left: 105px; color: #505050; font-weight: bold;');
-    loader.innerHTML = "Pour exporter les informations, il est nécessaire de raffraichir la page (F5)";
-    container.appendChild(loader);
+    message = document.createElement('span');
+    message.setAttribute('id', 'warning');
+    message.setAttribute('name', 'warning');
+    message.setAttribute('style', 'display: block; margin: 8px; margin-left: 105px; color: #505050; font-weight: bold;');
+    var lienPageAnimal = "<a href='javascript:' onclick='document.getElementById(\"extendedPatientAction\").click();'>page de l'animal</a>";
+    message.innerHTML = "Pour exporter les informations, il faut d'abord ouvrir la " + lienPageAnimal + ".";
+    container.appendChild(message);
 }
 
 // Affiche le texte d'erreur
 function addError() {
-    loader = document.createElement('span');
-    loader.setAttribute('id', 'error');
-    loader.setAttribute('name', 'error');
-    loader.setAttribute('style', 'display: block; margin: 8px; margin-left: 105px; color: #fa0000; font-weight: bold;');
-    loader.innerHTML = "Impossible de charger l'extension GmVET Data Catcher";
-    container.appendChild(loader);
+    message = document.createElement('span');
+    message.setAttribute('id', 'error');
+    message.setAttribute('name', 'error');
+    message.setAttribute('style', 'display: block; margin: 8px; margin-left: 105px; color: #fa0000; font-weight: bold;');
+    message.innerHTML = "Impossible de charger l'extension GmVET Data Catcher.";
+    container.appendChild(message);
 }
 
 // Intègre le bouton d'exporation à la page
-function addButton() {
+function addButtonExport() {
     button = document.createElement('button');
     button.setAttribute('id', 'export');
     button.setAttribute('name', 'export');
@@ -233,31 +264,32 @@ function injectScript() {
 
 // Exécution du script
 window.addEventListener("load", function () {
-    if (window.location.href.indexOf('medicalpatient') > -1) {
-        try {
-            addLoader();
+    try {
+        waitContainer().then(function() {
+            addWarning();           // On demande à l'utilisateur d'ouvrir la fiche de l'animal
             waitInfos().then(function() {
-                getInfos();         // On récupère les informations de la page
-                formatInfos();      // On les formattent avant de les afficher
-                formatEmpty();      // On remplace tous les champs vides
-                loader.remove();    // On enlève le label "Chargement..."
-                addButton();        // On ajoute le bouton d'export des données
-                addInvoice();       // On ajoute le champ du texte pour la facture
-                addPrescription();  // On ajoute le champ du texte pour l'ordonnace
-                injectScript();     // On injecte le script d'affichage sur la page
+                message.remove();       // On supprime le message d'instruction (fiche animal)
+                addLoader();            // On affiche un message de chargement
+                getInfos()              // On récupère les informations de la page
+                formatInfos();          // On les formattent avant de les afficher
+                formatEmpty();          // On remplace tous les champs vides
+                message.remove();       // On supprime le message de chargement
+                addButtonExport();      // On ajoute le bouton d'export des données
+                addInvoice();           // On ajoute le champ du texte pour la facture
+                addPrescription();      // On ajoute le champ du texte pour l'ordonnace
+                injectScript();         // On injecte le script d'affichage sur la page
                 console.log('[GmVET Data Catcher] Successfully loaded.');
+                waitAgenda().then(function() {
+                    window.location.reload();   // On recharge la page (pour relancer le script)
+                });
             });
-        }
-        catch (error) {
-            console.error(error);
-            addError();
-            console.log('[GmVET Data Catcher] An error occured.');
-        }
-        finally {
-            console.log('[GmVET Data Catcher] Script has finished.');
-        }
+        });
     }
-    else {
-        addWarning();
+    catch (error) {
+        if (container) { addError(); }
+        console.log('[GmVET Data Catcher] Error : ' + error);
+    }
+    finally {
+        console.log('[GmVET Data Catcher] Script has finished.');
     }
 });
